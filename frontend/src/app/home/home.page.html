@@ -1,0 +1,117 @@
+<ion-content [fullscreen]="true" class="game-bg">
+  
+  <div class="login-screen" *ngIf="!joined">
+    <div class="glass-panel">
+      <h1>IMPOSTOR ONLINE</h1>
+      <div class="mode-selector">
+        <button [class.active]="loginMode === 'create'" (click)="loginMode = 'create'">CREAR SALA</button>
+        <button [class.active]="loginMode === 'join'" (click)="loginMode = 'join'">UNIRSE</button>
+      </div>
+      <div class="emoji-picker">
+        <span *ngFor="let e of emojis" (click)="userEmoji = e" [class.selected]="userEmoji === e">{{e}}</span>
+      </div>
+      <ion-input placeholder="Tu Nombre" [(ngModel)]="username" class="custom-input"></ion-input>
+      <ion-input *ngIf="loginMode === 'join'" placeholder="Código de Sala" [(ngModel)]="roomId" class="custom-input"></ion-input>
+      <ion-button expand="block" (click)="processLogin()" class="btn-main">
+        {{ loginMode === 'create' ? 'CREAR SALA' : 'ENTRAR' }}
+      </ion-button>
+    </div>
+  </div>
+
+  <div *ngIf="joined" class="game-container">
+    
+    <div class="red-vignette" *ngIf="(isImpostor$ | async) && (phase$ | async) !== 'lobby' && !gameResult"></div>
+
+    <div class="lobby" *ngIf="(phase$ | async) === 'lobby'">
+      <div class="room-header">
+        <h2>CÓDIGO: <span class="code-highlight">{{roomId}}</span></h2>
+        <div class="settings-box" *ngIf="isOwner$ | async">
+          <ion-item lines="none" class="transparent-item">
+            <ion-label>Categoría</ion-label>
+            <ion-select [(ngModel)]="selectedCategory" interface="popover">
+              <ion-select-option *ngFor="let cat of categories" [value]="cat">{{cat}}</ion-select-option>
+            </ion-select>
+          </ion-item>
+          <ion-item lines="none" class="transparent-item">
+            <ion-label>Pista al Impostor</ion-label>
+            <ion-toggle [(ngModel)]="enableHint" color="success"></ion-toggle>
+          </ion-item>
+        </div>
+        <div class="settings-box" *ngIf="!(isOwner$ | async)">
+            <p>Esperando configuración del líder...</p>
+        </div>
+      </div>
+
+      <div class="player-grid">
+        <div class="p-card" *ngFor="let p of (players$ | async)">
+          <div class="avatar">{{p.emoji}}</div>
+          <span>{{p.username}}</span>
+          <div class="status" [class.ready]="p.isReady">{{p.isReady ? 'LISTO' : '...'}}</div>
+        </div>
+      </div>
+      
+      <ion-button class="ready-btn" [color]="isReady ? 'danger' : 'success'" (click)="toggleReady()">
+        {{ isReady ? 'CANCELAR' : 'ESTOY LISTO' }}
+      </ion-button>
+      
+      <div class="countdown-overlay" *ngIf="countdown !== null && countdown >= 0">
+        <h1 class="bounce">{{countdown}}</h1>
+      </div>
+    </div>
+
+    <div class="reveal-screen" *ngIf="(phase$ | async) === 'reveal'">
+      <h1 [class.red]="(isImpostor$ | async)">{{ (isImpostor$ | async) ? 'IMPOSTOR' : 'TRIPULANTE' }}</h1>
+      <div class="big-word" *ngIf="!(isImpostor$ | async)">{{ word$ | async }}</div>
+      <div class="big-word red" *ngIf="(isImpostor$ | async)">MATA A TODOS</div>
+      <div class="hint-text" *ngIf="(categoryHint$ | async)">Tema: <strong>{{ categoryHint$ | async }}</strong></div>
+    </div>
+
+    <div class="board" 
+         [class.panic]="(timer$ | async)! <= 10"
+         *ngIf="(phase$ | async) === 'talking' || (phase$ | async) === 'voting'">
+      
+      <div class="timer-badge" [class.urgent]="(timer$ | async)! < 10">
+        ⏱️ {{ timer$ | async }}s
+      </div>
+
+      <div class="center-hud">
+        <div class="my-role">{{ (isImpostor$ | async) ? '😈' : '😇' }}</div>
+        <div class="my-word">{{ (isImpostor$ | async) ? 'IMPOSTOR' : (word$ | async) }}</div>
+        <div class="phase-badge" *ngIf="(phase$ | async) === 'voting'">¡A VOTAR!</div>
+      </div>
+
+      <div class="orbit">
+        <div class="planet" *ngFor="let p of (players$ | async); let i = index"
+             [ngStyle]="getPlayerStyle(i, (players$ | async)?.length || 0)"
+             [class.selected-target]="selectedPlayerId === p.id"
+             (click)="vote(p.id)">
+          <div class="p-avatar" [class.talking]="(currentTurnPlayer$ | async) === p.username">
+            {{p.emoji}}
+            <div class="vote-count" *ngIf="(phase$ | async) === 'voting' && voteCounts[p.id]">{{voteCounts[p.id]}}</div>
+          </div>
+          <span class="p-name">{{p.username}}</span>
+        </div>
+      </div>
+
+      <div class="bottom-controls" *ngIf="(phase$ | async) === 'talking'">
+        <ion-button *ngIf="(currentTurnPlayer$ | async) === username" color="warning" expand="block" (click)="finishTurn()">
+            TERMINAR MI TURNO
+        </ion-button>
+        <div class="turn-info" *ngIf="(currentTurnPlayer$ | async) !== username">
+            Le toca hablar a: <strong>{{currentTurnPlayer$ | async}}</strong>
+        </div>
+      </div>
+    </div>
+
+    <div class="result-screen" *ngIf="gameResult" [class.win]="gameResult.success" [class.lose]="!gameResult.success">
+      <h1>{{ gameResult.success ? 'VICTORIA' : 'DERROTA' }}</h1>
+      <p>Impostor era: <strong>{{ gameResult.impostorName }}</strong></p>
+      <p>Expulsado: {{ gameResult.expelledName }}</p>
+      <ion-button *ngIf="isOwner$ | async" color="light" fill="outline" (click)="triggerReset()">
+          JUGAR OTRA VEZ
+      </ion-button>
+      <p *ngIf="!(isOwner$ | async)" class="waiting-text">Esperando al líder...</p>
+    </div>
+
+  </div>
+</ion-content>
