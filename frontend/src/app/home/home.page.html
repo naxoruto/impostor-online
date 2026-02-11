@@ -10,7 +10,6 @@
       <div class="emoji-picker">
         <span *ngFor="let e of emojis" (click)="userEmoji = e" [class.selected]="userEmoji === e">{{e}}</span>
       </div>
-      <input type="text" placeholder="SI VES ESTO, EL HTML FUNCIONA" style="background: white; color: black; padding: 20px; font-size: 20px; display: block; width: 100%;">
       <ion-input placeholder="Tu Nombre" [(ngModel)]="username" class="custom-input"></ion-input>
       <ion-input *ngIf="loginMode === 'join'" placeholder="Código de Sala" [(ngModel)]="roomId" class="custom-input"></ion-input>
       <ion-button expand="block" (click)="processLogin()" class="btn-main">

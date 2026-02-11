@@ -9,7 +9,11 @@ import { SocketService } from '../services/socket.service';
   templateUrl: 'home.page.html',
   styleUrls: ['home.page.scss'],
   standalone: true,
-  imports: [IonicModule, CommonModule, FormsModule]
+  imports: [
+    CommonModule, 
+    FormsModule, 
+    IonicModule
+  ],
 })
 export class HomePage {
   username = '';
