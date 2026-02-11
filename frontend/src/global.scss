@@ -41,3 +41,20 @@
 :root {
   --ion-font-family: 'Orbitron', sans-serif;
 }
+
+/* FORZAR COLORES VISIBLES EN INPUTS */
+ion-input {
+  --background: #ffffff !important; /* Fondo blanco */
+  --color: #000000 !important;      /* Letra negra */
+  --placeholder-color: #666666 !important;
+  border: 1px solid #ccc;           /* Un borde para saber dónde está */
+  margin-bottom: 10px;
+}
+
+/* Opcional: Si el fondo de la página es negro por tu diseño Cyberpunk */
+/*
+ion-content {
+  --background: #000000;
+  --color: #ffffff;
+}
+*/
